@@ -225,10 +225,14 @@ const PosterPreview = ({ content, controls, setControls, isReal = false }) => {
     }
     if (content.overlayAsset.type === 'css') {
       const styleType = content.overlayAsset.styleType;
+      const c = controls.singleOverlayColor || '#000000';
+      // Convert hex to rgba for gradient compatibility
+      const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+      const rgba = `rgba(${r},${g},${b},${opacity})`;
       let ds = {};
-      if (styleType === 'shadow-bottom') ds = { background: `linear-gradient(to top, rgba(0,0,0,${opacity}) 0%, transparent 100%)` };
-      else if (styleType === 'vignette') ds = { background: `radial-gradient(circle, transparent 40%, rgba(0,0,0,${opacity}) 100%)` };
-      else if (styleType === 'frame-gold') ds = { border: `${20 * ratio}px solid #D4AF37`, boxShadow: `inset 0 0 40px rgba(0,0,0,${opacity})` };
+      if (styleType === 'shadow-bottom') ds = { background: `linear-gradient(to top, ${rgba} 0%, transparent 100%)` };
+      else if (styleType === 'vignette') ds = { background: `radial-gradient(circle, transparent 40%, ${rgba} 100%)` };
+      else if (styleType === 'frame-gold') ds = { border: `${20 * ratio}px solid ${c}`, boxShadow: `inset 0 0 40px ${rgba}` };
       return <div className="absolute inset-0 pointer-events-none z-10" style={ds}></div>;
     }
     if (content.overlayAsset.type === 'image') {

@@ -40,6 +40,7 @@ export default function Home() {
         gradientColors: { from: '#FFA500', via: '#FF8C00', to: '#FFDAB9' },
         overlayColor: '#000000', overlayOpacity: 0.1,
         assetOverlayOpacity: 1,
+        singleOverlayColor: '#000000',
         logoPos: { x: 0, y: -42 },
         textPos: { x: 0, y: -25 }
     });
@@ -65,15 +66,25 @@ export default function Home() {
         setAiContext(userInput);
 
         const systemPrompt = `
-      Anda adalah LEAD CONTENT STRATEGIST untuk "Djalaluddin Pane Foundation".
-      ATURAN VISUAL: Zakat (Tangan memberi), Pendidikan (Seminar).
-      FORMAT OUTPUT (Strict):
-      1. [TITLE]JUDUL (Kapital, Max 7 Kata)[/TITLE]
-      2. [SUBTITLE]Ringkasan Fakta (Max 20 Kata).[/SUBTITLE]
-      3. [IMAGE]Prompt visual fotorealistik EN. Struktur: [Subject] + [Action] + [Env] + [Lighting]. Akhiri: "--no text"[/IMAGE]
-      4. [CAPTION]3 Paragraf (Hook, Value, CTA).[/CAPTION]
-      5. [HASHTAGS]Hashtag relevan.[/HASHTAGS]
-      `;
+You are the Lead Content Strategist & Copywriter for "Djalaluddin Pane Foundation (DPF)", a philanthropy and education foundation in Indonesia.
+Your task is to analyze the provided source material (URL context or Document topic) and generate highly engaging, accurate Instagram content.
+
+CRITICAL RULES:
+1. STRICT ADHERENCE: Do NOT invent facts. Base everything ONLY on the provided context.
+2. TONE: Professional, empathetic, inspiring, and impactful.
+3. LANGUAGE: Indonesian (Bahasa Indonesia), except for the IMAGE prompt which must be in English.
+
+OUTPUT FORMAT (You must use these exact tags):
+[TITLE]Generate a punchy, click-worthy title. ALL CAPS. Maximum 7 words.[/TITLE]
+[SUBTITLE]Generate an informative summary subtitle. MUST BE between 12 to 25 words. Do not make it too short. Clearly state the 'who, what, or why' of the context.[/SUBTITLE]
+[IMAGE]Generate a highly detailed, photorealistic Midjourney-style image prompt in ENGLISH based on the context. Focus on emotion, lighting, and action. Use keywords like: cinematic, 8k, highly detailed, sharp focus. ALWAYS end with: "--no text, typography, letters, words"[/IMAGE]
+[CAPTION]Write a 3-paragraph Instagram caption:
+- Paragraph 1: A strong hook based on the context.
+- Paragraph 2: The core value/story/facts.
+- Paragraph 3: A clear Call to Action (CTA) relating to DPF's mission.
+[/CAPTION]
+[HASHTAGS]#DPF #DjalaluddinPaneFoundation #Zakat #Pendidikan (add 3-5 more relevant hashtags based on context).[/HASHTAGS]
+`;
 
         const res = await callAPI({ type: 'text', prompt: userInput, systemInstruction: systemPrompt }, setLoading);
 
@@ -101,8 +112,10 @@ export default function Home() {
     };
 
     const handleGenerateImage = async (customPrompt = null) => {
-        let prompt = customPrompt || `Topic: '${content.title}'. Context: ${content.subtitle}. Photorealistic, cinematic, 8k. --no text`;
-        const res = await callAPI({ type: 'image', prompt: prompt }, null);
+        const basePrompt = customPrompt || `Subject related to: '${content.title}'. Context: ${content.subtitle}. Photorealistic, cinematic lighting, 8k resolution, highly detailed, professional photography.`;
+        const finalPrompt = `${basePrompt} --no text, words, letters, typography, watermark, signature`;
+
+        const res = await callAPI({ type: 'image', prompt: finalPrompt }, null);
         if (res?.predictions?.[0]?.url) {
             setContent(prev => ({ ...prev, image: res.predictions[0].url, bgImage: null }));
         }
@@ -110,15 +123,26 @@ export default function Home() {
 
     const handleRewrite = async (field, style = "standar") => {
         if (!content[field]) return;
-        let instruction = "";
-        if (field === 'title') instruction = "Variasi JUDUL LAIN, lebih MENARIK. Max 7 Kata. Kapital.";
-        else if (field === 'subtitle') instruction = "Paraphrase ringkas, padat (Max 20 kata).";
-        else if (field === 'caption') instruction = `Rewrite gaya: ${style}.`;
 
-        const promptContext = `ASAL: "${content[field]}" INSTRUKSI: ${instruction} OUTPUT HANYA TEKS.`;
+        let instruction = "";
+        if (field === 'title') {
+            instruction = "Buatkan 1 variasi JUDUL LAIN yang lebih memancing rasa ingin tahu (clickbait positif). TETAP RELEVAN DENGAN KONTEKS. Maksimal 7 Kata. HARUS HURUF KAPITAL SEMUA.";
+        } else if (field === 'subtitle') {
+            instruction = "Tulis ulang subtitle ini agar lebih deskriptif dan padat fakta. HARUS antara 12 hingga 25 kata. Jangan terlalu pendek.";
+        } else if (field === 'caption') {
+            instruction = `Tulis ulang caption ini dengan gaya bahasa: ${style}. Tetap pertahankan 3 paragraf (Hook, Value, CTA).`;
+        }
+
+        const promptContext = `
+KONTEKS BERITA/SUMBER ASLI: "${aiContext || 'Informasi seputar Djalaluddin Pane Foundation'}"
+TEKS YANG INGIN DIUBAH: "${content[field]}"
+
+INSTRUKSI: ${instruction}
+ATURAN: Berikan OUTPUT HANYA TEKS HASIL UBAHANNYA SAJA. Tanpa basa-basi, tanpa tanda kutip di awal/akhir, tanpa tag.`;
+
         const res = await callAPI({ type: 'text', prompt: promptContext }, setLoading);
         if (res?.choices?.[0]?.message?.content) {
-            let txt = res.choices[0].message.content.replace(/"/g, '').replace(/\[.*?\]/g, '').trim();
+            let txt = res.choices[0].message.content.replace(/^"|"$/g, '').replace(/\[.*?\]/g, '').trim();
             if (field === 'title') txt = txt.toUpperCase();
             setContent(prev => ({ ...prev, [field]: txt }));
         }

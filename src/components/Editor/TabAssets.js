@@ -60,6 +60,14 @@ export default function TabAssets({ content, setContent, controls, setControls, 
                     </div>
                 )}
 
+                {/* KONTROL WARNA OVERLAY CSS (Non-Gradient) */}
+                {content.overlayAsset?.type === 'css' && content.overlayAsset?.styleType !== 'dpf-gradient' && (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                        <p className="text-[9px] font-bold text-slate-600 uppercase">Warna Overlay</p>
+                        <input type="color" value={controls.singleOverlayColor} onChange={(e) => setControls({ ...controls, singleOverlayColor: e.target.value })} className="w-full h-8 border rounded cursor-pointer" title="Warna Overlay" />
+                    </div>
+                )}
+
                 {/* KONTROL OPACITY GLOBAL UNTUK SEMUA OVERLAY */}
                 {content.overlayAsset && content.overlayAsset.type !== 'none' && (
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
